@@ -1,0 +1,20 @@
+{
+	"name": "simonkak_be",
+	"version": "4.0.0",
+	"description": "Back End Sistem Monitoring Order Perkakas (Rest API)",
+	"main": "app.js",
+	"author": "Sofi Rahmatulloh",
+	"license": "MIT",
+	"scripts": {
+		"start": "nodemon app.js"
+	},
+	"dependencies": {
+		"bcrypt": "^5.0.1",
+		"dotenv": "^16.0.1",
+		"express": "^4.18.1",
+		"jsonwebtoken": "^8.5.1",
+		"moment": "^2.29.3",
+		"multer": "^1.4.4",
+		"pg": "^8.7.3"
+	}
+}
