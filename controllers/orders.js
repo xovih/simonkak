@@ -73,7 +73,7 @@ const listOrders = async (req, res) => {
     }
 
     const total = await db.query(
-      `SELECT COUNT(*) AS total FROM v_orders ` + queryWhere + queryOrder
+      `SELECT COUNT(*) AS total FROM v_orders ` + queryWhere
     )
 
     return res.status(200).json({
