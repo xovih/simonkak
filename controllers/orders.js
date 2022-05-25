@@ -289,7 +289,7 @@ const importOrders = async (req, res) => {
               (mat_sap_no, mat_desc, img_no, mat_type, warehouse_stock, unit, created_at, created_by) 
             VALUES
               ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id
+            RETURNING mat_id AS id
           `,
             [matNo, matDesc, imgNo, matType, qty, unit, saatIni, userID]
           )
