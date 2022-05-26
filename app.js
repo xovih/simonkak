@@ -4,7 +4,7 @@ const express = require("express")
 const app = express()
 const PORT = process.env.APP_PORT || 2812
 
-// Routes Definition 
+// Routes Definition
 const auth = require("./routes/auth")
 const profile = require("./routes/profile")
 const departements = require("./routes/departements")
@@ -13,13 +13,15 @@ const menus = require("./routes/menus")
 const actors = require("./routes/actors")
 const users = require("./routes/users")
 const orders = require("./routes/orders")
+const operators = require("./routes/operators")
+const machines = require("./routes/machines")
 
 // Input Configuration
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Access Configuration
-app.use('/uploads', express.static('./uploads'))
+app.use("/uploads", express.static("./uploads"))
 
 // Routes Configuration
 app.use("/auth", auth)
@@ -30,11 +32,13 @@ app.use("/menus", menus)
 app.use("/actors", actors)
 app.use("/users", users)
 app.use("/orders", orders)
+app.use("/operators", operators)
+app.use("/machines", machines)
 
 app.listen(PORT, (err) => {
-  if (err) {
-    return console.log(err)
-  }
+	if (err) {
+		return console.log(err)
+	}
 
-  console.log(`Backend Server Running at Port : ${PORT}`)
+	console.log(`Backend Server Running at Port : ${PORT}`)
 })
