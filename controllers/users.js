@@ -257,4 +257,5 @@ module.exports = {
 	updateUser,
 	delUser,
 	resetPassword,
+	aktivasiUser,
 }
