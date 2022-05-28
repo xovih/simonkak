@@ -10,7 +10,7 @@ const inputKK = async (req, res) => {
 		const { orderID, empID, macID, empTime, macTime, resGood, resBad } =
 			req.body
 
-		let wStatus = req.body.status ? req.body.status : true
+		let wStatus = req.body.isFinish ? req.body.isFinish : false
 
 		if (
 			!orderID ||
@@ -27,10 +27,14 @@ const inputKK = async (req, res) => {
 			})
 		}
 
-		const finishGood = wStatus ? resGood : 0
-		const finishBadd = wStatus ? resBad : 0
-		const semiGood = !wStatus ? resGood : 0
-		const semiBadd = !wStatus ? resBad : 0
+		console.log(wStatus)
+
+		const finishGood = wStatus == "true" ? resGood : 0
+		const finishBadd = wStatus == "true" ? resBad : 0
+		const semiGood = wStatus == "false" ? resGood : 0
+		const semiBadd = wStatus == "false" ? resBad : 0
+
+		console.log(finishGood, semiGood)
 
 		const saatIni = moment(new Date()).format("YYYY-MM-DD HH:mm:ss")
 
@@ -39,7 +43,20 @@ const inputKK = async (req, res) => {
         INSERT INTO time_tickets 
           (order_id, emp_id, mac_id, emp_time, mac_time, res_finish_good, res_finish_bad, res_semi_good, res_semi_bad, input_at, input_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      `
+      `,
+			[
+				orderID,
+				empID,
+				macID,
+				empTime,
+				macTime,
+				finishGood,
+				finishBadd,
+				semiGood,
+				semiBadd,
+				saatIni,
+				userID,
+			]
 		)
 
 		return res.status(200).json({
@@ -98,11 +115,11 @@ const listKK = async (req, res) => {
 				})
 				break
 
-			case "byemp":
+			case "perop":
 				const empID = req.query.id
 				const kkOP = await db.query(
 					`
-            SELECT * FROM v_kk_detail emp_id = '${empID}' ORDER BY input_at DESC
+            SELECT * FROM v_kk_all WHERE emp_id = '${empID}' ORDER BY input_at DESC
           `
 				)
 
@@ -113,12 +130,75 @@ const listKK = async (req, res) => {
 				})
 				break
 
-			case "all":
+			case "perorder":
+				const orderID = req.query.id
 				const kkAll = await db.query(
 					`
-            SELECT * FROM v_kk_detail 
+            SELECT * FROM v_kk_detail WHERE order_id = '${orderID}' ORDER BY input_at DESC
           `
 				)
+
+				res.status(200).json({
+					success: true,
+					message: "Pemanggilan Data Kartu Kerja Sukses !",
+					data: kkAll.rows,
+				})
+				break
+
+			case "all":
+				let { search, page, limit } = req.query
+
+				let queryLimit = ``
+
+				if (parseInt(limit) > 0) {
+					limit = limit ? parseInt(limit) : 10
+					let offset = page ? (parseInt(page) - 1) * limit : 0
+
+					queryLimit = `LIMIT ${limit} OFFSET ${offset}`
+				}
+
+				let queryData = `
+          SELECT * FROM v_kk_all ORDER BY input_at DESC
+          ${queryLimit}
+        `
+				let queryRows = `
+          SELECT COUNT(*) AS total FROM v_kk_all 
+        `
+
+				if (search) {
+					queryData = `
+            SELECT * FROM v_kk_all 
+            WHERE 
+              dal_code ILIKE '%${search}%' OR
+              workcenter ILIKE '%${search}%' OR
+              mat_type ILIKE '%${search}%'
+            ORDER BY input_at DESC
+            ${queryLimit}
+          `
+
+					queryRows = `
+            SELECT COUNT(*) AS total FROM v_kk_all 
+            WHERE 
+              dal_code ILIKE '%${search}%' OR
+              workcenter ILIKE '%${search}%' OR
+              mat_type ILIKE '%${search}%'
+          `
+				}
+
+				const kk = await db.query(queryData)
+				const total = await db.query(queryRows)
+
+				res.status(200).json({
+					success: true,
+					message: "Data Kartu Kerja Ditemukan !",
+					data: kk.rows,
+					totalData: parseInt(total.rows[0].total),
+					page: page && queryLimit.length > 0 ? parseInt(page) : 1,
+					totalPage:
+						queryLimit.length > 0
+							? Math.ceil(parseInt(total.rows[0].total) / limit)
+							: 1,
+				})
 				break
 
 			default:
@@ -133,4 +213,10 @@ const listKK = async (req, res) => {
 			message: "Gagal Mendapatkan Data Kartu Kerja !",
 		})
 	}
+}
+
+module.exports = {
+	inputKK,
+	delKK,
+	listKK,
 }
