@@ -45,13 +45,14 @@ const listMachines = async (req, res) => {
 
 		if (search) {
 			const total = await db.query(
-				`SELECT COUNT(*) AS total FROM machines WHERE dal_code ILIKE '%${search}%' OR mac_name ILIKE '%${search}%'`
+				`SELECT COUNT(*) AS total FROM machines WHERE (dal_code ILIKE '%${search}%' OR mac_name ILIKE '%${search}%') AND is_active = true`
 			)
 
 			const mac = await db.query(
 				`
         SELECT * FROM machines 
-        WHERE dal_code ILIKE '%${search}%' OR mac_name ILIKE '%${search}%'
+        WHERE (dal_code ILIKE '%${search}%' OR mac_name ILIKE '%${search}%')
+				AND is_active = true
         ORDER BY dal_code ASC
         LIMIT ${limit} OFFSET ${offset}
       `
@@ -67,11 +68,15 @@ const listMachines = async (req, res) => {
 			})
 		}
 
-		const total = await db.query(`SELECT COUNT(*) AS total FROM machines`)
+		const total = await db.query(`
+			SELECT COUNT(*) AS total FROM machines
+			WHERE is_active = true
+		`)
 
 		const mac = await db.query(
 			`
         SELECT * FROM machines 
+				WHERE is_active = true
         ORDER BY dal_code ASC
         LIMIT ${limit} OFFSET ${offset}
       `
@@ -166,13 +171,15 @@ const delMachines = async (req, res) => {
 
 		const mac = await db.query(
 			`
-        DELETE FROM machines WHERE mac_id = '${id}' RETURNING dal_code, mac_name
+        UPDATE machines SET is_active = false  
+				WHERE mac_id = '${id}' 
+				RETURNING dal_code, mac_name
       `
 		)
 
 		return res.status(200).json({
 			success: true,
-			message: `Mesin ${mac.rows[0].dal_code} ${mac.rows[0].mac_name} Berhasil Dihapus !`,
+			message: `Mesin ${mac.rows[0].dal_code} ${mac.rows[0].mac_name} Berhasil Di non-aktifkan !`,
 		})
 	} catch (err) {
 		return res.status(400).json({
