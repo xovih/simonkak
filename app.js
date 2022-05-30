@@ -17,6 +17,7 @@ const operators = require("./routes/operators")
 const machines = require("./routes/machines")
 const carts = require("./routes/carts")
 const timeTickets = require("./routes/timeTickets")
+const moveOrders = require("./routes/moveOrders")
 
 // Input Configuration
 app.use(express.json())
@@ -36,13 +37,14 @@ app.use("/users", users)
 app.use("/orders", orders)
 app.use("/operators", operators)
 app.use("/machines", machines)
-app.use("/timetickets", timeTickets)
 app.use("/carts", carts)
+app.use("/timetickets", timeTickets)
+app.use("/ordermoves", moveOrders)
 
 app.listen(PORT, (err) => {
-	if (err) {
-		return console.log(err)
-	}
+  if (err) {
+    return console.log(err)
+  }
 
-	console.log(`Backend Server Running at Port : ${PORT}`)
+  console.log(`Backend Server Running at Port : ${PORT}`)
 })
