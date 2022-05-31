@@ -21,6 +21,7 @@ const moveOrders = require("./routes/moveOrders")
 const inspection = require("./routes/inspection")
 const workorders = require("./routes/workorders")
 const warehousing = require("./routes/warehousing")
+const expenditures = require("./routes/expenditures")
 
 // Input Configuration
 app.use(express.json())
@@ -46,6 +47,7 @@ app.use("/ordermoves", moveOrders)
 app.use("/inspects", inspection)
 app.use("/workorders", workorders)
 app.use("/warehousing", warehousing)
+app.use("/expenditures", expenditures)
 
 app.listen(PORT, (err) => {
   if (err) {
