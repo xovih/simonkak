@@ -27,14 +27,10 @@ const inputKK = async (req, res) => {
 			})
 		}
 
-		console.log(wStatus)
-
 		const finishGood = wStatus == "true" ? resGood : 0
 		const finishBadd = wStatus == "true" ? resBad : 0
 		const semiGood = wStatus == "false" ? resGood : 0
 		const semiBadd = wStatus == "false" ? resBad : 0
-
-		console.log(finishGood, semiGood)
 
 		const saatIni = moment(new Date()).format("YYYY-MM-DD HH:mm:ss")
 
