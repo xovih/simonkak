@@ -48,16 +48,29 @@ const listMenu = async (req, res) => {
   try {
     let { search, page, limit } = req.query
 
+    const types =
+      req.params.types == 'child' ?
+        `type = 'child'` :
+        `NOT type = 'child'`
+
     limit = limit ? parseInt(limit) : 10
     let offset = page ? (parseInt(page) - 1) * limit : 0
 
     if (search) {
-      const total = await db.query(`SELECT COUNT(*) AS total FROM menus WHERE label ILIKE '%${search}%'`)
+      const total = await db.query(`
+        SELECT COUNT(*) AS total 
+        FROM menus AND
+          ${types}
+        WHERE
+          label ILIKE '%${search}%'
+      `)
 
       const menu = await db.query(
         `
         SELECT * FROM menus 
-        WHERE label ILIKE '%${search}%'
+        WHERE 
+          label ILIKE '%${search}%' AND
+          ${types}
         ORDER BY menu_id DESC
         LIMIT ${limit} OFFSET ${offset}
       `
@@ -73,11 +86,15 @@ const listMenu = async (req, res) => {
       })
     }
 
-    const total = await db.query(`SELECT COUNT(*) AS total FROM menus`)
+    const total = await db.query(`
+      SELECT COUNT(*) AS total FROM menus
+      WHERE ${types}
+    `)
 
     const menu = await db.query(
       `
         SELECT * FROM menus 
+        WHERE ${types}
         ORDER BY menu_id DESC
         LIMIT ${limit} OFFSET ${offset}
       `
