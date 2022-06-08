@@ -59,10 +59,10 @@ const listMenu = async (req, res) => {
     if (search) {
       const total = await db.query(`
         SELECT COUNT(*) AS total 
-        FROM menus AND
-          ${types}
+        FROM menus
         WHERE
-          label ILIKE '%${search}%'
+          label ILIKE '%${search}%' AND
+          ${types}
       `)
 
       const menu = await db.query(

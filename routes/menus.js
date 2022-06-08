@@ -7,7 +7,7 @@ const {
 router.use(verify)
 
 router.post("/", addMenu)
-router.get("/", listMenu)
+router.get("/:types", listMenu)
 router.get("/:id", getMenu)
 router.put("/:id", changeMenu)
 router.delete("/:id", delMenu)
