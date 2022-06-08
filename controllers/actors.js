@@ -284,6 +284,55 @@ const delMenu = async (req, res) => {
   }
 }
 
+const actorMenus = async (req, res) => {
+  try {
+    const category = req.params.cat
+    const actorID = req.params.id
+    const menuType = req.params.type
+
+    let type =
+      menuType == 'child'
+        ? ` AND type = 'child'`
+        : ` AND NOT type = 'child'`
+
+    if (menuType == 'all') {
+      type = ""
+    }
+
+    let par = ``
+    const parent = req.params.parent
+    if (parent != "none") par = ` AND parent_id = ${parent}`
+
+    const cat = category != 'all' ? ` AND category = '${category}' ` : ` `
+
+    const menus = await db.query(
+      `
+        SELECT * FROM v_actor_menus 
+        WHERE 
+          actor_id = ${actorID} 
+          ${cat}
+          ${type}
+          ${par}
+        ORDER BY order_no ASC
+      `
+    )
+
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Request Valid !",
+      data: menus.rows
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mendapatkan menu !",
+      detail: error
+    })
+  }
+}
+
 
 module.exports = {
   addActor,
@@ -293,5 +342,6 @@ module.exports = {
   delActor,
   copyActor,
   addMenu,
-  delMenu
+  delMenu,
+  actorMenus
 }
