@@ -4,10 +4,23 @@ const addMenu = async (req, res) => {
   try {
     const { link, activeClass, icon, label, type, category, parentID } = req.body
 
-    if (!link || !activeClass || !label || !icon) {
+    if (!link || !activeClass || !label) {
       return res.status(400).json({
         success: false,
-        message: "Link, Active Class, Icon, Label Wajib Diisi !"
+        message: "Link, Active Class, Label Wajib Diisi !"
+      })
+    }
+
+    const cek = await db.query(
+      `
+        SELECT * FROM menus WHERE label = '${label}' AND link = '${link}'
+      `
+    )
+
+    if (cek.rowCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Menu ${label} (${link}) sudah ada !`
       })
     }
 
@@ -48,20 +61,27 @@ const listMenu = async (req, res) => {
   try {
     let { search, page, limit } = req.query
 
-    const types =
-      req.params.types == 'child' ?
-        `type = 'child'` :
-        `NOT type = 'child'`
+    let types = ''
 
-    limit = limit ? parseInt(limit) : 10
-    let offset = page ? (parseInt(page) - 1) * limit : 0
+    if (req.params.types == 'child') types = ` type = 'child'`
+    if (req.params.types == 'parent') types = ` NOT type = 'child'`
+
+    let queryLimit = ``
+
+    if (parseInt(limit) > 0) {
+      limit = limit ? parseInt(limit) : 10
+      let offset = page ? (parseInt(page) - 1) * limit : 0
+
+      queryLimit = `LIMIT ${limit} OFFSET ${offset}`
+    }
 
     if (search) {
+      types = ` AND ${types}`
       const total = await db.query(`
         SELECT COUNT(*) AS total 
         FROM menus
         WHERE
-          label ILIKE '%${search}%' AND
+          label ILIKE '%${search}%'
           ${types}
       `)
 
@@ -69,10 +89,10 @@ const listMenu = async (req, res) => {
         `
         SELECT * FROM menus 
         WHERE 
-          label ILIKE '%${search}%' AND
+          label ILIKE '%${search}%'
           ${types}
-        ORDER BY menu_id DESC
-        LIMIT ${limit} OFFSET ${offset}
+        ORDER BY label ASC
+        ${queryLimit}
       `
       )
 
@@ -82,21 +102,25 @@ const listMenu = async (req, res) => {
         data: menu.rows,
         totalData: parseInt(total.rows[0].total),
         page: page ? parseInt(page) : 1,
-        totalPage: Math.ceil(parseInt(total.rows[0].total) / limit)
+        totalPage:
+          queryLimit.length > 0
+            ? Math.ceil(parseInt(total.rows[0].total) / limit)
+            : 1,
       })
     }
 
+    if (types.length > 0) types = ` WHERE ${types}`
     const total = await db.query(`
       SELECT COUNT(*) AS total FROM menus
-      WHERE ${types}
+      ${types}
     `)
 
     const menu = await db.query(
       `
         SELECT * FROM menus 
-        WHERE ${types}
-        ORDER BY menu_id DESC
-        LIMIT ${limit} OFFSET ${offset}
+        ${types}
+        ORDER BY menu_id ASC
+        ${queryLimit}
       `
     )
 
@@ -106,7 +130,60 @@ const listMenu = async (req, res) => {
       data: menu.rows,
       totalData: parseInt(total.rows[0].total),
       page: page ? parseInt(page) : 1,
-      totalPage: Math.ceil(parseInt(total.rows[0].total) / limit)
+      totalPage:
+        queryLimit.length > 0
+          ? Math.ceil(parseInt(total.rows[0].total) / limit)
+          : 1,
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error !",
+      detail: error
+    })
+  }
+}
+
+const getChildCount = async (req, res) => {
+  try {
+
+    const { id } = req.params
+
+    const total = await db.query(`
+      SELECT COUNT(*) AS total FROM menus
+      WHERE parent_id = ${id} 
+    `)
+
+    return res.status(200).json({
+      success: true,
+      message: "Data Menu Ditemukan !",
+      data: parseInt(total.rows[0].total),
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error !",
+      detail: error
+    })
+  }
+}
+
+const getParentName = async (req, res) => {
+  try {
+
+    const { id } = req.params
+
+    const menu = await db.query(`
+      SELECT label FROM menus
+      WHERE menu_id = ${id} 
+      ORDER BY menu_id DESC
+      LIMIT 1
+    `)
+
+    return res.status(200).json({
+      success: true,
+      message: "Data Menu Ditemukan !",
+      data: menu.rows[0].label,
     })
   } catch (error) {
     return res.status(500).json({
@@ -156,10 +233,10 @@ const changeMenu = async (req, res) => {
 
     const orderNo = req.body.orderNo ? req.body.orderNo : 1
 
-    if (!link || !activeClass || !label || !icon) {
+    if (!link || !activeClass || !label) {
       return res.status(400).json({
         success: false,
-        message: "Link, Active Class, Icon, Label Wajib Diisi !"
+        message: "Link, Active Class, Label Wajib Diisi !"
       })
     }
 
@@ -226,5 +303,7 @@ module.exports = {
   listMenu,
   getMenu,
   changeMenu,
-  delMenu
+  delMenu,
+  getChildCount,
+  getParentName
 }

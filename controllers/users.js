@@ -3,7 +3,8 @@ const bcrypt = require("bcrypt")
 
 const addUser = async (req, res) => {
 	try {
-		const { npp, nickname, fullname, actor_id, workcen_id, password } = req.body
+		let { npp, nickname, fullname, password } = req.body
+		const { actor_id, workcen_id } = req.body
 
 		if (
 			!npp ||
@@ -18,6 +19,11 @@ const addUser = async (req, res) => {
 				message: "Inputan tidak Lengkap !",
 			})
 		}
+
+		npp = npp.trim()
+		nickname = nickname.trim()
+		fullname = fullname.trim()
+		password = password.trim()
 
 		const isOperator = req.body.isOperator ? req.body.isOperator : false
 		const foto = `uploads\\avatar.jpg`
@@ -57,20 +63,28 @@ const listUsers = async (req, res) => {
 	try {
 		let { search, page, limit } = req.query
 
-		limit = limit ? parseInt(limit) : 10
-		let offset = page ? (parseInt(page) - 1) * limit : 0
+		let queryLimit = ``
+
+		if (parseInt(limit) > 0) {
+			limit = limit ? parseInt(limit) : 10
+			let offset = page ? (parseInt(page) - 1) * limit : 0
+
+			queryLimit = `LIMIT ${limit} OFFSET ${offset}`
+		}
 
 		if (search) {
 			const total = await db.query(
-				`SELECT COUNT(*) AS total FROM users WHERE npp ILIKE '%${search}%' OR fullname ILIKE '%${search}%'`
+				`SELECT COUNT(*) AS total FROM v_users WHERE npp ILIKE '%${search}%' OR fullname ILIKE '%${search}%'`
 			)
 
 			const user = await db.query(
 				`
-        SELECT * FROM users 
+        SELECT 
+					npp, nickname, fullname, photo, is_operator, workcenter, dept, role 
+				FROM v_users 
         WHERE npp ILIKE '%${search}%' OR fullname ILIKE '%${search}%'
         ORDER BY user_id ASC
-        LIMIT ${limit} OFFSET ${offset}
+        ${queryLimit}
       `
 			)
 
@@ -80,17 +94,22 @@ const listUsers = async (req, res) => {
 				data: user.rows,
 				totalData: parseInt(total.rows[0].total),
 				page: page ? parseInt(page) : 1,
-				totalPage: Math.ceil(parseInt(total.rows[0].total) / limit),
+				totalPage:
+					queryLimit.length > 0
+						? Math.ceil(parseInt(total.rows[0].total) / limit)
+						: 1,
 			})
 		}
 
-		const total = await db.query(`SELECT COUNT(*) AS total FROM users`)
+		const total = await db.query(`SELECT COUNT(*) AS total FROM v_users`)
 
 		const user = await db.query(
 			`
-        SELECT * FROM users 
+        SELECT 
+					npp, nickname, fullname, photo, is_operator, workcenter, dept, role 
+				FROM v_users 
         ORDER BY user_id ASC
-        LIMIT ${limit} OFFSET ${offset}
+        ${queryLimit}
       `
 		)
 
@@ -100,7 +119,10 @@ const listUsers = async (req, res) => {
 			data: user.rows,
 			totalData: parseInt(total.rows[0].total),
 			page: page ? parseInt(page) : 1,
-			totalPage: Math.ceil(parseInt(total.rows[0].total) / limit),
+			totalPage:
+				queryLimit.length > 0
+					? Math.ceil(parseInt(total.rows[0].total) / limit)
+					: 1,
 		})
 	} catch (error) {
 		return res.status(500).json({
@@ -117,7 +139,7 @@ const getUser = async (req, res) => {
 
 		const user = await db.query(
 			`
-        SELECT * FROM users WHERE user_id = '${userID}'
+        SELECT * FROM v_users WHERE user_id = '${userID}'
       `
 		)
 
@@ -128,10 +150,12 @@ const getUser = async (req, res) => {
 			})
 		}
 
+		const { password, ...data } = user.rows[0]
+
 		return res.status(200).json({
 			success: true,
 			message: "Data user Ditemukan !",
-			data: user.rows[0],
+			data,
 		})
 	} catch (err) {
 		return res.status(500).json({
@@ -145,13 +169,17 @@ const getUser = async (req, res) => {
 const updateUser = async (req, res) => {
 	try {
 		const userID = req.params.id
-		const { nickname, fullname, actor_id, workcen_id } = req.body
+		let { nickname, fullname } = req.body
+		const { actor_id, workcen_id } = req.body
 
 		if (!nickname || !fullname || !actor_id || !workcen_id)
 			return res.status(400).json({
 				success: false,
 				message: "Inputan tidak Lengkap !",
 			})
+
+		nickname = nickname.trim()
+		fullname = fullname.trim()
 
 		const isOperator = req.body.isOperator ? req.body.isOperator : false
 

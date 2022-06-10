@@ -2,12 +2,25 @@ const db = require("../utils/connpg")
 
 const addActor = async (req, res) => {
   try {
-    const { role } = req.body
+    const role = req.body.role.trim()
 
-    if (!role) {
+    if (!req.body.role) {
       return res.status(400).json({
         success: false,
         message: "Role Aktor Wajib Diisi !"
+      })
+    }
+
+    const cek = await db.query(
+      `
+        SELECT * FROM actors WHERE role = '${role}'
+      `
+    )
+
+    if (cek.rowCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Aktor ${role} sudah ada !`
       })
     }
 
@@ -38,8 +51,14 @@ const listActors = async (req, res) => {
   try {
     let { search, page, limit } = req.query
 
-    limit = limit ? parseInt(limit) : 10
-    let offset = page ? (parseInt(page) - 1) * limit : 0
+    let queryLimit = ``
+
+    if (parseInt(limit) > 0) {
+      limit = limit ? parseInt(limit) : 10
+      let offset = page ? (parseInt(page) - 1) * limit : 0
+
+      queryLimit = `LIMIT ${limit} OFFSET ${offset}`
+    }
 
     if (search) {
       const total = await db.query(`SELECT COUNT(*) AS total FROM actors WHERE role ILIKE '%${search}%'`)
@@ -49,7 +68,7 @@ const listActors = async (req, res) => {
         SELECT * FROM actors 
         WHERE role ILIKE '%${search}%'
         ORDER BY actor_id ASC
-        LIMIT ${limit} OFFSET ${offset}
+        ${queryLimit}
       `
       )
 
@@ -59,7 +78,10 @@ const listActors = async (req, res) => {
         data: actor.rows,
         totalData: parseInt(total.rows[0].total),
         page: page ? parseInt(page) : 1,
-        totalPage: Math.ceil(parseInt(total.rows[0].total) / limit)
+        totalPage:
+          queryLimit.length > 0
+            ? Math.ceil(parseInt(total.rows[0].total) / limit)
+            : 1,
       })
     }
 
@@ -69,7 +91,7 @@ const listActors = async (req, res) => {
       `
         SELECT * FROM actors 
         ORDER BY actor_id ASC
-        LIMIT ${limit} OFFSET ${offset}
+        ${queryLimit}
       `
     )
 
@@ -79,7 +101,10 @@ const listActors = async (req, res) => {
       data: actor.rows,
       totalData: parseInt(total.rows[0].total),
       page: page ? parseInt(page) : 1,
-      totalPage: Math.ceil(parseInt(total.rows[0].total) / limit)
+      totalPage:
+        queryLimit.length > 0
+          ? Math.ceil(parseInt(total.rows[0].total) / limit)
+          : 1,
     })
   } catch (error) {
     return res.status(500).json({
@@ -184,8 +209,28 @@ const delActor = async (req, res) => {
 
 const copyActor = async (req, res) => {
   try {
-    const actorID = req.params.id
-    const newRole = req.body.newRole
+    const actorID = req.params.actorid
+    const newRole = req.body.newRole.trim()
+
+    if (!req.body.newRole) {
+      return res.status(400).json({
+        success: false,
+        message: "Role Aktor Wajib Diisi !"
+      })
+    }
+
+    const cek = await db.query(
+      `
+        SELECT * FROM actors WHERE role = '${newRole}'
+      `
+    )
+
+    if (cek.rowCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Aktor ${newRole} sudah ada !`
+      })
+    }
 
     const actor = await db.query(
       `
@@ -239,6 +284,19 @@ const addMenu = async (req, res) => {
   try {
     const actorID = req.params.id
     const menuID = req.body.menuID
+
+    const cek = await db.query(
+      `
+        SELECT * FROM actor_details WHERE actor_id = ${actorID} AND menu_id = ${menuID}
+      `
+    )
+
+    if (cek.rowCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Gagal, Role sudah ada !`
+      })
+    }
 
     await db.query(
       `
@@ -333,6 +391,88 @@ const actorMenus = async (req, res) => {
   }
 }
 
+const actorUsers = async (req, res) => {
+  try {
+    const { actorid } = req.params
+
+    const menus = await db.query(
+      `
+        SELECT user_id, npp, fullname, dept, actor_id FROM v_users 
+        WHERE 
+          actor_id = ${actorid}
+        ORDER BY fullname ASC
+      `
+    )
+
+    return res.status(200).json({
+      success: true,
+      message: "Request Valid !",
+      data: menus.rows
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mendapatkan menu !",
+      detail: error
+    })
+  }
+}
+
+const menusCount = async (req, res) => {
+  try {
+    const id = req.params.actorid
+
+    const menus = await db.query(
+      `
+        SELECT COUNT(*) as total FROM actor_details 
+        WHERE 
+          actor_id = ${id}
+      `
+    )
+
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Request Valid !",
+      data: parseInt(menus.rows[0].total)
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mendapatkan menu !",
+      detail: error
+    })
+  }
+}
+
+const usersCount = async (req, res) => {
+  try {
+    const id = req.params.actorid
+
+    const menus = await db.query(
+      `
+        SELECT COUNT(*) as total FROM users 
+        WHERE 
+          actor_id = ${id}
+      `
+    )
+
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Request Valid !",
+      data: parseInt(menus.rows[0].total)
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mendapatkan menu !",
+      detail: error
+    })
+  }
+}
 
 module.exports = {
   addActor,
@@ -343,5 +483,8 @@ module.exports = {
   copyActor,
   addMenu,
   delMenu,
-  actorMenus
+  actorMenus,
+  menusCount,
+  usersCount,
+  actorUsers,
 }

@@ -14,7 +14,7 @@ router.use(verify)
 
 router.post("/", addUser)
 router.get("/", listUsers)
-router.get("/:id", getUser)
+router.get("/detail/:id", getUser)
 router.put("/update/:id", updateUser)
 router.put("/passwordreset/:id", resetPassword)
 router.delete("/:id", delUser)
